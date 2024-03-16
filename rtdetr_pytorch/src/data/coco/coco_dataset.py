@@ -109,7 +109,7 @@ class ConvertCocoPolysToMask(object):
             classes = [obj["category_id"] for obj in anno]
         
         label2category = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4}
-        classes = [label2category[obj["category_id"]]for obj in anno]
+        # classes = [label2category[obj["category_id"]]for obj in anno]
 
         classes = torch.tensor(classes, dtype=torch.int64)
 
