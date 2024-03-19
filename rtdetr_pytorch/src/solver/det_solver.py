@@ -64,7 +64,7 @@ class DetSolver(BaseSolver):
             print('best_stat: ', best_stat)
 
             if best_stat['epoch'] == epoch and self.output_dir:
-                dist.save_on_master(self.state_dict(epoch), [self.output_dir / 'best.pth'])
+                dist.save_on_master(self.state_dict(epoch), self.output_dir / 'best.pth')
 
 
             log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
