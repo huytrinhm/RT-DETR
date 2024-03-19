@@ -41,7 +41,7 @@ class DetSolver(BaseSolver):
             self.lr_scheduler.step()
             
             if self.output_dir:
-                checkpoint_paths = [self.output_dir / 'checkpoint.pth']
+                checkpoint_paths = [self.output_dir / 'latest.pth']
                 # extra checkpoint before LR drop and every 100 epochs
                 if (epoch + 1) % args.checkpoint_step == 0:
                     checkpoint_paths.append(self.output_dir / f'checkpoint{epoch:04}.pth')
@@ -62,6 +62,9 @@ class DetSolver(BaseSolver):
                     best_stat['epoch'] = epoch
                     best_stat[k] = test_stats[k][0]
             print('best_stat: ', best_stat)
+
+            if best_stat['epoch'] == epoch and self.output_dir:
+                dist.save_on_master(self.state_dict(epoch), [self.output_dir / 'best.pth'])
 
 
             log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
