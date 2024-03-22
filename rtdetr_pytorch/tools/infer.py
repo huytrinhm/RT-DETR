@@ -2,6 +2,7 @@
 """
 
 import os 
+import json
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
@@ -16,6 +17,7 @@ import torchvision
 from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms.v2 as T
 from PIL import Image
+from tqdm import tqdm
 
 
 def main(args, ):
@@ -63,9 +65,10 @@ def main(args, ):
         def __getitem__(self, index):
             img_path = os.path.join(self.root, self.files[index])
             original_image = torchvision.datasets.folder.default_loader(img_path)
-            return self.transform(original_image), original_image.shape
+            return self.files[index], self.transform(original_image), torch.Tensor(original_image.size)
 
-    model = Model()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = Model().to(device)
 
     if not args.image_path:
         print("--image-path is required.")
@@ -73,7 +76,22 @@ def main(args, ):
 
     test_dataset = TestDataset(args.image_path)
     dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+    
+    preds = {}
 
+    for img_ids, imgs, sizes in tqdm(dataloader):
+      imgs = imgs.to(device)
+      sizes = sizes.to(device)
+      results = model(imgs, sizes)
+      for img_id, cls, bbox, prob in zip(img_ids, *results):
+        preds[img_id] = {
+          'cls': cls.tolist(),
+          'bbox': bbox.tolist(),
+          'prob': prob.tolist()
+        }
+    if args.output:
+      json.dump(preds, open(args.output, 'w'))
+    
 
 if __name__ == '__main__':
 
@@ -81,6 +99,7 @@ if __name__ == '__main__':
     parser.add_argument('--config', '-c', type=str, )
     parser.add_argument('--resume', '-r', type=str, )
     parser.add_argument('--image-path', '-p', type=str, )
+    parser.add_argument('--output', '-o', type=str, )
     parser.add_argument('--batch-size', type=int, default=8)
 
     args = parser.parse_args()
