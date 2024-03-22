@@ -44,12 +44,14 @@ def load_model(config, resume_path):
             outputs = self.model(images)
             return self.postprocessor(outputs, orig_target_sizes)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = Model().to(device)
+    model = Model()
     return model
 
 
 def detect_one_image(model, image_path):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+
     transform = T.Compose([
         T.Resize([640, 640]),
         T.ToImageTensor(),
@@ -57,8 +59,8 @@ def detect_one_image(model, image_path):
     ])
 
     img = Image.open(image_path)
-    size = torch.Tensor(img.size)
-    img = transform(img)
+    size = torch.Tensor(img.size).to(device)
+    img = transform(img).to(device)
     results = model(img.unsqueeze(0), size.unsqueeze(0))
 
     preds = {
